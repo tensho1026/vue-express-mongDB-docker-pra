@@ -1,0 +1,4 @@
+# client/.dockerignore & server/.dockerignore 共通例
+node_modules
+dist
+.git

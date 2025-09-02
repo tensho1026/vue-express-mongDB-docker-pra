@@ -1,0 +1,50 @@
+services:
+  server:
+    build: ./server
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - CORS_ORIGIN=http://localhost:5173
+      - MONGODB_URI=mongodb://mongo:27017/myapp?directConnection=true
+    volumes:
+      - ./server:/app
+      - server_node_modules:/app/node_modules  # ← named volume で保持
+    depends_on:
+      - mongo
+    command: >
+      sh -lc "if [ ! -d node_modules ] || [ -z \"$(ls -A node_modules 2>/dev/null)\" ];
+              then echo '📦 Installing deps...' && npm ci || npm install;
+              fi;
+              npm run dev"
+
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+
+  client:
+    build: ./client
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_BASE_URL: http://server:3000
+    volumes:
+      - ./client:/app
+      - client_node_modules:/app/node_modules   # ← 同じ考え方
+    depends_on:
+      - server
+    command: >
+      sh -lc "if [ ! -d node_modules ] || [ -z \"$(ls -A node_modules 2>/dev/null)\" ];
+              then echo '📦 Installing deps...' && npm ci || npm install;
+              fi;
+              npm run dev -- --host"
+
+volumes:
+  mongo-data:
+  server_node_modules:
+  client_node_modules:
